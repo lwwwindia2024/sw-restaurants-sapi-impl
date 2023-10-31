@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<sub-flow name="updaterestaurantbyid" doc:id="046ab6cc-d3b4-4977-9277-243e8eac5734" >
+		<db:select doc:name="Select" doc:id="18bf97dc-6da2-49cc-91a0-d6887789dc28" config-ref="Database_Config">
+			<db:sql><![CDATA[select * from restaurant where restaurant_id = :id ]]></db:sql>
+			<db:input-parameters><![CDATA[#[{
+	id: vars.id as Number 
+}]]]></db:input-parameters>
+		</db:select>
+		<choice doc:name="Choice" doc:id="5b231602-e07e-4e69-86cb-5c1e3b583ba3">
+			<when expression="#[isEmpty(payload)]">
+				<raise-error doc:name="Raise error" doc:id="00208df1-f55f-4625-b5bc-9a57c8290ea7" type="APP:DOESNOT_EXIST" description="Restaurant Doen't Exist"/>
+			</when>
+			<otherwise >
+				<ee:transform doc:name="Transform Message" doc:id="a697799c-485c-415c-b451-e14a5e2f56d4">
+			<ee:message>
+			</ee:message>
+					<ee:variables>
+						<ee:set-variable variableName="restaurant"><![CDATA[%dw 2.0
+output application/java
+
+var restaurant =payload[0]
+---
+{
+	name:  if(vars.originalPayload.name != null) vars.originalPayload.name else  restaurant.name,
+	house_number: if(vars.originalPayload.address.houseNumber != null) vars.originalPayload.address.houseNumber else  restaurant.house_number,
+	street: if(vars.originalPayload.address.street != null) vars.originalPayload.address.street else  restaurant.street,
+	city: if(vars.originalPayload.address.city != null) vars.originalPayload.address.city else  restaurant.city,
+	pincode: if(vars.originalPayload.address.pincode != null) vars.originalPayload.address.pincode else  restaurant.pincode
+}]]></ee:set-variable>
+					</ee:variables>
+		</ee:transform>
+				<db:update doc:name="Update" doc:id="8bed1fc7-d2ad-47e9-8cfd-088bb460e310" config-ref="Database_Config">
+			<db:sql><![CDATA[update restaurant set name= :name , house_number= :house_number,street = :street,city= :city,pincode=:pincode
+where restaurant_id = :id]]></db:sql>
+					<db:input-parameters><![CDATA[#[{
+	id: vars.id,
+	name: vars.restaurant.name,
+	house_number: vars.restaurant.house_number,
+	street: vars.restaurant.street,
+	city: vars.restaurant.city,
+	pincode: vars.restaurant.pincode
+}]]]></db:input-parameters>
+		</db:update>
+			</otherwise>
+		</choice>
+	</sub-flow>
+	<flow name="deleterestaurantbyid" doc:id="6f120773-3e2b-4f1f-953a-a48f5dfbcc6a" >
+		<db:delete doc:name="Delete Restaurant by id" doc:id="0b2e9572-1c67-4533-ac76-bc664cabd09f" config-ref="Database_Config">
+			<db:sql ><![CDATA[delete from restaurant where restaurant_id = :id]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{
+	id: vars.id
+}]]]></db:input-parameters>
+		</db:delete>
+	</flow>
+	<flow name="getrestaurantbyid" doc:id="2c3ab262-2c3e-47ac-8d7f-b33e63a71148" >
+		<db:select doc:name="Select" doc:id="0b275fe5-5ef9-4345-84f7-2d6eba2f0a92" config-ref="Database_Config">
+			<db:sql ><![CDATA[select * from restaurant where restaurant_id = :id ]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{
+	id: vars.id as Number 
+}]]]></db:input-parameters>
+		</db:select>
+		<choice doc:name="Choice" doc:id="53afce91-6d33-4347-b98b-680275eb2089" >
+			<when expression="#[isEmpty(payload)]">
+				<raise-error doc:name="Raise error" doc:id="a7366d4b-236a-4774-b736-6d62b0f2a2c3" type="APP:DOESNOT_EXIST" description="Restaurant Doen't Exist"/>
+			</when>
+			<otherwise >
+				<set-payload value="#[payload[0]]" doc:name="Set Retrieved restaurant as payload" doc:id="ef1ed407-8099-441f-8e70-fea37ef0091e" />
+			</otherwise>
+		</choice>
+	</flow>
+	<flow name="getallrestaurants" doc:id="36373bc2-fa05-42a0-b729-90b5b6887b58" >
+		<db:select doc:name="Select" doc:id="22654ad4-cc28-4046-be82-b9788991b6fb" config-ref="Database_Config">
+			<db:sql ><![CDATA[select * from restaurant where name  like  :restaurantname
+LIMIT :mylimit OFFSET :myoffset]]></db:sql>
+			<db:input-parameters ><![CDATA[#[%dw 2.0
+var pageSize = (vars.pageSize default 2)  as Number
+var page =  vars.page  default 1 as Number
+---
+{
+	restaurantname: '%' ++ (vars.name default " "  as String) ++ "%",
+	mylimit: pageSize default 2 as Number,
+	myoffset: (page -1)* (pageSize) as Number
+}]]]></db:input-parameters>
+		</db:select>
+		<ee:transform doc:name="Map Restaurants" doc:id="6f33f1c6-5f02-48dc-8fef-1e182ad934ae" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+import dw::core::Strings
+---
+payload map (item,index) ->{
+	restaurantId: item.restaurant_id,
+	name: item.name,
+	address:{
+		houseNumber: item.house_number,
+		street: item.street,
+		city:item.city,
+		pincode: item.pincode
+	},
+	links:[
+		{
+			linkName: "menus" ,
+			href: (if(vars.requestUri contains "?") Strings::substringBefore(vars.requestUri as String,"?") 
+			      else vars.requestUri as String  ) ++ '/' ++ 
+					item.restaurant_id as String++ "/menus"
+		}
+	]
+	
+}]]></ee:set-payload>
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="httpStatus" ><![CDATA[%dw 2.0
+output application/java
+---
+200]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+	</flow>
+	<flow name="AddRestaurant" doc:id="9a074d96-cd0b-45b2-a1ee-188c47071bad" >
+		<flow-ref doc:name="isDuplicateRestaurant" doc:id="58e0a01a-4583-471a-bdc7-98be8575fef1" name="isDuplicateRestaurant" target="isDuplicateRestaurant"/>
+		<choice doc:name="Choice" doc:id="dc9eba0a-6c49-4138-978a-a7561af174ff" >
+			<when expression="#[vars.isDuplicateRestaurant]">
+				<raise-error doc:name="Raise error" doc:id="e9003aee-30c9-4362-a8d6-2ae2d6f31910" type="APP:DUPLICATE_RESTAURANT" description="Restaurant is duplicate "/>
+			</when>
+			<otherwise >
+				<db:insert doc:name="Insert" doc:id="6ab00a81-77ef-4458-aafe-1c254ed704de" config-ref="Database_Config" autoGenerateKeys="true">
+			<db:sql><![CDATA[
+INSERT INTO restaurant (`name`,`house_number`,`street`,`city`,`pincode`)
+VALUES(:name,:housenumber,:street,:city,:pincode);
+]]></db:sql>
+			<db:input-parameters><![CDATA[#[{
+	name: payload.name as String,
+	housenumber: payload.address.houseNumber as String,
+	street: payload.address.street as String,
+	city: payload.address.city as String,
+	pincode: payload.address.pincode as String
+}]]]></db:input-parameters>
+			<db:auto-generated-keys-column-names>
+				<db:auto-generated-keys-column-name value="restaurant_id" />
+			</db:auto-generated-keys-column-names>
+		</db:insert>
+			</otherwise>
+		</choice>
+		<logger level="INFO" doc:name="Logger" doc:id="4448ebd4-acc1-4b9b-875a-6a3c17150d7c" message="Added Restaurant"/>
+	</flow>
+	<flow name="isDuplicateRestaurant" doc:id="6da34eb3-bf56-4c6f-8784-24bc7e2aade9" >
+		<db:select doc:name="Select" doc:id="3c37002b-33d7-4353-b8ca-bbe7f58f4c0a" config-ref="Database_Config">
+			<db:sql ><![CDATA[select * from restaurant where name = :name]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{
+	name: payload.name as String
+}]]]></db:input-parameters>
+		</db:select>
+		<ee:transform doc:name="Transform Message" doc:id="3d6711b4-efbe-46df-810e-0a50547ba382" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+sizeOf(payload) >0]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+</mule>
