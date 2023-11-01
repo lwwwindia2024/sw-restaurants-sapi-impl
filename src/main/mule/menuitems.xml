@@ -87,32 +87,6 @@ where menu_item_id = :menuItemId]]></db:sql>
 	menuId: vars.menuId as Number
 }]]]></db:input-parameters>
 		</db:select>
-		<ee:transform doc:name="Transform Message" doc:id="22c53ca0-b495-439e-82a7-f2c35b0b4fb4" >
-			<ee:message >
-				<ee:set-payload ><![CDATA[%dw 2.0
-output application/json
----
-payload map (item)->{
-	menuItemId: item.menu_item_id,
-  itemName: item.item_name,
-  description: item.item_description,
-  price: item.price,
-  menuId: item.menu_id,
-   "links": [
-    {
-      "linkName": "menu",
-      "href": "/api/restaurants" ++ vars.id as String ++"/menus/" ++ vars.menuId as String
-    },
-    {
-      "linkName": "menuItemInventory",
-      "href": "/api/restaurants" ++ vars.id as String ++"/menus/" ++ vars.menuId as String 
-      			++ "/menuItems/" ++ item.menu_item_id ++ "/inventory"
-    }
-    
-    ]
-}]]></ee:set-payload>
-			</ee:message>
-		</ee:transform>
 	</flow>
 	<flow name="AddaNewMenuItem" doc:id="e940019f-1ab6-49cd-aac6-6d029fc1c319" >
 		<db:insert doc:name="Insert" doc:id="e92a3c97-f683-48c4-827c-c2d99ff4daf8" config-ref="Database_Config" autoGenerateKeys="true">

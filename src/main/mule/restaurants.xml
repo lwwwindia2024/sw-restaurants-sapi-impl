@@ -9,7 +9,7 @@ http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/
 		<db:select doc:name="Select" doc:id="18bf97dc-6da2-49cc-91a0-d6887789dc28" config-ref="Database_Config">
 			<db:sql><![CDATA[select * from restaurant where restaurant_id = :id ]]></db:sql>
 			<db:input-parameters><![CDATA[#[{
-	id: vars.id as Number 
+	id: vars.restaurantId as Number 
 }]]]></db:input-parameters>
 		</db:select>
 		<choice doc:name="Choice" doc:id="5b231602-e07e-4e69-86cb-5c1e3b583ba3">
@@ -54,7 +54,7 @@ where restaurant_id = :id]]></db:sql>
 		<db:delete doc:name="Delete Restaurant by id" doc:id="0b2e9572-1c67-4533-ac76-bc664cabd09f" config-ref="Database_Config">
 			<db:sql ><![CDATA[delete from restaurant where restaurant_id = :id]]></db:sql>
 			<db:input-parameters ><![CDATA[#[{
-	id: vars.id
+	id: vars.restaurantId
 }]]]></db:input-parameters>
 		</db:delete>
 	</flow>
@@ -62,7 +62,7 @@ where restaurant_id = :id]]></db:sql>
 		<db:select doc:name="Select" doc:id="0b275fe5-5ef9-4345-84f7-2d6eba2f0a92" config-ref="Database_Config">
 			<db:sql ><![CDATA[select * from restaurant where restaurant_id = :id ]]></db:sql>
 			<db:input-parameters ><![CDATA[#[{
-	id: vars.id as Number 
+	id: vars.restaurantId as Number 
 }]]]></db:input-parameters>
 		</db:select>
 		<choice doc:name="Choice" doc:id="53afce91-6d33-4347-b98b-680275eb2089" >
@@ -126,7 +126,7 @@ output application/java
 		<flow-ref doc:name="isDuplicateRestaurant" doc:id="58e0a01a-4583-471a-bdc7-98be8575fef1" name="isDuplicateRestaurant" target="isDuplicateRestaurant"/>
 		<choice doc:name="Choice" doc:id="dc9eba0a-6c49-4138-978a-a7561af174ff" >
 			<when expression="#[vars.isDuplicateRestaurant]">
-				<raise-error doc:name="Raise error" doc:id="e9003aee-30c9-4362-a8d6-2ae2d6f31910" type="APP:DUPLICATE_RESTAURANT" description="Restaurant is duplicate "/>
+				<raise-error doc:name="Raise error" doc:id="e9003aee-30c9-4362-a8d6-2ae2d6f31910" type="APP:DUPLICATE_ENTITY" description="Restaurant is duplicate "/>
 			</when>
 			<otherwise >
 				<db:insert doc:name="Insert" doc:id="6ab00a81-77ef-4458-aafe-1c254ed704de" config-ref="Database_Config" autoGenerateKeys="true">
